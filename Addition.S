@@ -9,9 +9,9 @@ sumformat: .asciz "0x%x\n"
     .global main
 
 main:
-
-    mov r5, #0
-    ldr r6, =0x40ad70a4
+    stmfd sp!, {lr}
+    ldr r5, =0xc1ad70a4
+    ldr r6, =0xc0ad70a4
 
     mov r1, r5
     mov r2, r6
@@ -29,7 +29,7 @@ main:
     bl printf
 
     mov r0, #0
-    mov pc, lr
+    ldmfd sp!, {pc}
 
 
 fadd:
@@ -41,12 +41,12 @@ fadd:
     and r3, r1, r9   @ E2
 
     sub r9, r2, r3        @ Subtract one exponent from the other
-    cmp r9, #(24<<23)            @ If it's much greater, then just return
-    blgt faddfinally
-    mvn r10, #0x0B000000  @ #(-24<<23)
-    cmp r9, r10
+    asr r9, #23
+    cmp r9, #(24)            @ If it's much greater, then just return
+    blgt faddfinally        @"Setup"
+    cmp r9, #-24
     movlt r0, r1
-    bllt faddfinally
+    bllt faddfinally        @"SecondBail"
 
     ldr r10, =#0xFF800000
     bic r4, r0, r10 @ M1
@@ -59,7 +59,7 @@ fadd:
     tst r1, #SIGNBITS
     rsbne r5, r5, #0        @Taking the 2's complement
 
-    cmp r9, #0
+    cmp r9, #0              @"SignedMantissa"
     asrgt r5, r5, r9
     rsblt r9, r9, #0
     asrlt r4, r4, r9
@@ -67,7 +67,7 @@ fadd:
 
     adds r4, r4, r5         @ Mr in r4
 
-    moveq r0, #0            @ If Mr is zero, return zero
+    moveq r0, #0            @ If Mr is zero, return zero @"Results1"
     bleq faddfinally
 
     rsbmi r4, r4, #0        @ If negative, take 2's complement
@@ -76,8 +76,8 @@ fadd:
 
     mov r3, #0              @Shift amount in r3
     cmp r4, #1<<16
-    movhs r4, r4, lsl #16
-    addhs r3, r3, #16
+    movlo r4, r4, lsl #16
+    addlo r3, r3, #16
 
     tst r4, #0xFF000000
     moveq r4, r4, lsl #8
@@ -98,10 +98,10 @@ fadd:
     bic r4, r4, #SIGNBITS
     lsr r4, r4, #8
 
-    rsb r3, r3, #9
-    add r2, r3, r2, lsr #23 @Move exponent over
-    orr r0, r4, r2, lsl #23
-    orr r0, r0, r5, lsl #31
+    rsb r3, r3, #8
+    add r3, r3, r2, lsr #23 @Move exponent over
+    orr r0, r4, r3, lsl #23 @orr in exponent
+    orr r0, r0, r5, lsl #31 @orr in sign bit
 
 faddfinally:
     ldmia sp!, {r3-r12, pc}
