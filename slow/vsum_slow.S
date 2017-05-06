@@ -146,14 +146,14 @@ vsumbail:
     cmp r0, r1
     bhi vsumloop
 
-    cmp r4, #0
-    movle r0, #0
-    movgt r0, #1
+@    cmp r4, #0
+@    movle r0, #0
+@    movgt r0, #1
 
-@    rsblt r4, r4, #0
+    rsblt r4, r4, #0
 
-@    bic r0, r4, #INTRINSIC
-@    orrlt r0, r0, #(1<<31)        @set sign bit
-@    orr r0, r0, r3, lsl #23       @ orr in exponent
+    bic r0, r4, #INTRINSIC
+    orrlt r0, r0, #(1<<31)        @set sign bit
+    orr r0, r0, r3, lsl #23       @ orr in exponent
 
     ldmfd sp!, {r1-r12, pc}
